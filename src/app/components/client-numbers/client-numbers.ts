@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RaffleService, Participant, Raffle } from '../../services/raffle.service';
@@ -15,13 +15,14 @@ export class ClientNumbersComponent implements OnInit {
   // Selected raffle ID
   public selectedRaffleId = signal<string>('');
 
+  // Selected numbers for multi-selection
+  public selectedNumbers = signal<number[]>([]);
+
   // Booking Modal state
   public isReserveModalOpen = signal<boolean>(false);
-  public selectedNumber = signal<number | null>(null);
 
-  // Form Fields (Agile: name and phone only)
+  // Form Fields (Name only!)
   public clientName = signal<string>('');
-  public clientPhone = signal<string>('');
 
   ngOnInit(): void {
     // Select first active raffle as default
@@ -67,7 +68,12 @@ export class ClientNumbersComponent implements OnInit {
     return list;
   }
 
-  public getNumberClass(status: string): string {
+  public getNumberClass(status: string, num: number): string {
+    // Check if it is currently selected by the customer
+    if (this.selectedNumbers().includes(num)) {
+      return 'bg-teal-500 text-white scale-105 border-2 border-white dark:border-teal-400 shadow-md shadow-teal-500/35 ring-4 ring-teal-500/25';
+    }
+
     switch (status) {
       case 'reserved': return 'bg-amber-500 text-white shadow-md shadow-amber-500/20 scale-100 hover:scale-105';
       case 'paid': return 'bg-blue-500 text-white shadow-md shadow-blue-500/20 scale-100 hover:scale-105';
@@ -91,15 +97,28 @@ export class ClientNumbersComponent implements OnInit {
 
   public onNumberClick(num: number, status: string): void {
     if (status === 'available' || status === 'expired') {
-      this.selectedNumber.set(num);
-      this.clientName.set('');
-      this.clientPhone.set('');
-      this.isReserveModalOpen.set(true);
+      const current = this.selectedNumbers();
+      if (current.includes(num)) {
+        // Toggle off
+        this.selectedNumbers.set(current.filter(n => n !== num));
+      } else {
+        // Toggle on
+        this.selectedNumbers.set([...current, num]);
+      }
     } else {
       const p = this.getNumberParticipant(num);
       const owner = p ? ` por ${this.getShortName(p.name)}` : '';
       this.raffleService.showToast(`El número ${num} ya está ocupado${owner}. Elige otro número disponible.`, 'warning', 3000);
     }
+  }
+
+  public openReserveModal(): void {
+    if (this.selectedNumbers().length === 0) {
+      this.raffleService.showToast('Selecciona al menos un número para reservar.', 'warning');
+      return;
+    }
+    this.clientName.set('');
+    this.isReserveModalOpen.set(true);
   }
 
   public onReserveSubmit(): void {
@@ -108,19 +127,33 @@ export class ClientNumbersComponent implements OnInit {
       return;
     }
 
-    const res = this.raffleService.reserveNumber(
-      this.selectedRaffleId(),
-      this.selectedNumber()!,
-      this.clientName().trim(),
-      '', // No phone number required
-      'reserved' // always defaults to reserved for public clients
-    );
+    const numbersToReserve = [...this.selectedNumbers()];
+    let successCount = 0;
+    let failedNumbers: number[] = [];
 
-    if (res.success) {
+    for (const num of numbersToReserve) {
+      const res = this.raffleService.reserveNumber(
+        this.selectedRaffleId(),
+        num,
+        this.clientName().trim(),
+        '', // No phone number required
+        'reserved'
+      );
+
+      if (res.success) {
+        successCount++;
+      } else {
+        failedNumbers.push(num);
+      }
+    }
+
+    if (successCount > 0) {
       this.isReserveModalOpen.set(false);
-      this.selectedNumber.set(null);
-    } else {
-      this.raffleService.showToast(res.error || 'Error al reservar.', 'error');
+      this.selectedNumbers.set([]); // Clear selection list
+    }
+
+    if (failedNumbers.length > 0) {
+      this.raffleService.showToast(`No se pudieron reservar los números: ${failedNumbers.join(', ')}. Ya fueron ocupados.`, 'error', 5000);
     }
   }
 }

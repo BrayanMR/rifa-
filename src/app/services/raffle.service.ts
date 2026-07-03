@@ -379,15 +379,7 @@ export class RaffleService implements OnDestroy {
       return { success: false, error: `El número ${number} ya está registrado.` };
     }
 
-    // Regla 2: Un número por persona en la misma rifa (mismo nombre o mismo teléfono)
-    const personExists = this.participants().find(p =>
-      p.raffleId === raffleId &&
-      (p.status === 'reserved' || p.status === 'paid' || p.status === 'blocked') &&
-      (p.name.toLowerCase() === cleanedName.toLowerCase() || (cleanedPhone && p.phone === cleanedPhone))
-    );
-    if (personExists) {
-      return { success: false, error: `El participante ${cleanedName} ya tiene el número ${personExists.reservedNumber} registrado en esta rifa.` };
-    }
+
 
     // Guardar en Firestore
     try {
