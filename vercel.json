@@ -1,11 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/sortiraspa/browser",
-  "framework": "angular",
-  "routes": [
-    {
-      "src": "/(?!.*\\.(?:js|css|svg|png|jpg|jpeg|gif|webp|woff|woff2|ttf|eot|ico)$)(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": "angular"
 }
