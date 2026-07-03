@@ -124,11 +124,6 @@ export class RaffleService implements OnDestroy {
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       this.raffles.set(list);
-
-      // Seed if completely empty (first initialization)
-      if (list.length === 0) {
-        this.seedInitialFirestoreData();
-      }
     });
     this.unsubscribeFunctions.push(unsubRaffles);
 
@@ -370,8 +365,8 @@ export class RaffleService implements OnDestroy {
     const cleanedName = name.trim();
     const cleanedPhone = phone.trim();
 
-    if (!cleanedName || !cleanedPhone) {
-      return { success: false, error: 'Nombre y Teléfono son requeridos.' };
+    if (!cleanedName) {
+      return { success: false, error: 'El nombre es requerido.' };
     }
 
     // Regla 1: Validar si el número está ocupado
@@ -388,7 +383,7 @@ export class RaffleService implements OnDestroy {
     const personExists = this.participants().find(p =>
       p.raffleId === raffleId &&
       (p.status === 'reserved' || p.status === 'paid' || p.status === 'blocked') &&
-      (p.name.toLowerCase() === cleanedName.toLowerCase() || p.phone === cleanedPhone)
+      (p.name.toLowerCase() === cleanedName.toLowerCase() || (cleanedPhone && p.phone === cleanedPhone))
     );
     if (personExists) {
       return { success: false, error: `El participante ${cleanedName} ya tiene el número ${personExists.reservedNumber} registrado en esta rifa.` };

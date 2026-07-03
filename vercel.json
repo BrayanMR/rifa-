@@ -1,15 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/sortiraspa/browser",
-  "installCommand": "npm install",
   "framework": "angular",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://api.example.com/$1"
-    },
-    {
-      "source": "/(.*)",
+      "src": "/.*",
       "destination": "/index.html"
     }
   ]

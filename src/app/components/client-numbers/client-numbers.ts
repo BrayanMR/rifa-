@@ -103,8 +103,8 @@ export class ClientNumbersComponent implements OnInit {
   }
 
   public onReserveSubmit(): void {
-    if (!this.clientName().trim() || !this.clientPhone().trim()) {
-      this.raffleService.showToast('Completa tu nombre y teléfono para reservar.', 'error');
+    if (!this.clientName().trim()) {
+      this.raffleService.showToast('Completa tu nombre para reservar.', 'error');
       return;
     }
 
@@ -112,7 +112,7 @@ export class ClientNumbersComponent implements OnInit {
       this.selectedRaffleId(),
       this.selectedNumber()!,
       this.clientName().trim(),
-      this.clientPhone().trim(),
+      '', // No phone number required
       'reserved' // always defaults to reserved for public clients
     );
 
