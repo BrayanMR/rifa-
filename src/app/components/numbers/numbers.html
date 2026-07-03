@@ -1,0 +1,388 @@
+<div class="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-fade-in text-slate-800 dark:text-slate-200">
+  
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Selector de Números</h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Monitorea y vende tickets en tiempo real utilizando la cuadrícula interactiva.</p>
+    </div>
+    
+    <!-- Action buttons (Export / Print) -->
+    <div class="flex gap-2">
+      <button 
+        (click)="printRaffle()"
+        class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        Imprimir
+      </button>
+
+      <button 
+        (click)="exportExcel()"
+        class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Excel
+      </button>
+
+      <button 
+        (click)="exportCSV()"
+        class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Raffle Selection Tabs -->
+  <div class="flex overflow-x-auto no-scrollbar gap-2 pb-2 border-b border-slate-200/40 dark:border-slate-800/40 no-print shrink-0">
+    @for (raffle of raffleService.raffles(); track raffle.id) {
+      <button
+        (click)="onRaffleChange(raffle.id)"
+        class="px-4 py-2.5 rounded-xl border text-xs font-semibold whitespace-nowrap active:scale-95 transition-all"
+        [ngClass]="{
+          'bg-emerald-500 text-white border-emerald-500': selectedRaffleId() === raffle.id,
+          'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800': selectedRaffleId() !== raffle.id
+        }"
+      >
+        {{ raffle.name }}
+      </button>
+    } @empty {
+      <div class="text-xs text-slate-400 py-2">Crea una rifa primero desde la sección "Rifas" para habilitar el selector.</div>
+    }
+  </div>
+
+  @if (getSelectedRaffle()) {
+    <!-- Search & Color Legend Panel -->
+    <div class="glass-panel p-4 flex flex-col md:flex-row gap-4 items-center justify-between no-print">
+      
+      <!-- Searcher (Real-time Number or Participant Name) -->
+      <div class="relative w-full md:w-80">
+        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+        <input 
+          type="text" 
+          class="form-input pl-10" 
+          placeholder="Buscar Nº o participante..."
+          [ngModel]="searchNumQuery()"
+          (ngModelChange)="searchNumQuery.set($event)"
+        />
+      </div>
+
+      <!-- Quick filters for states -->
+      <div class="flex flex-wrap gap-2.5 items-center justify-start md:justify-end w-full md:w-auto">
+        <button 
+          (click)="filterStatus.set('all')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors uppercase"
+          [ngClass]="filterStatus() === 'all' ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900 border-slate-800 dark:border-white' : 'bg-transparent border-slate-200 dark:border-slate-800'"
+        >
+          Todos
+        </button>
+
+        <button 
+          (click)="filterStatus.set('available')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1.5 uppercase"
+          [ngClass]="filterStatus() === 'available' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-transparent border-emerald-500/25 text-emerald-500'"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" [class.bg-white]="filterStatus() === 'available'"></span>
+          Libres
+        </button>
+
+        <button 
+          (click)="filterStatus.set('reserved')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1.5 uppercase"
+          [ngClass]="filterStatus() === 'reserved' ? 'bg-amber-500 text-white border-amber-500' : 'bg-transparent border-amber-500/25 text-amber-500'"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500" [class.bg-white]="filterStatus() === 'reserved'"></span>
+          Reservados
+        </button>
+
+        <button 
+          (click)="filterStatus.set('paid')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1.5 uppercase"
+          [ngClass]="filterStatus() === 'paid' ? 'bg-blue-500 text-white border-blue-500' : 'bg-transparent border-blue-500/25 text-blue-500'"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500" [class.bg-white]="filterStatus() === 'paid'"></span>
+          Pagados
+        </button>
+
+        <button 
+          (click)="filterStatus.set('expired')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1.5 uppercase"
+          [ngClass]="filterStatus() === 'expired' ? 'bg-rose-500 text-white border-rose-500' : 'bg-transparent border-rose-500/25 text-rose-500'"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500" [class.bg-white]="filterStatus() === 'expired'"></span>
+          Vencidos
+        </button>
+
+        <button 
+          (click)="filterStatus.set('blocked')"
+          class="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1.5 uppercase"
+          [ngClass]="filterStatus() === 'blocked' ? 'bg-slate-500 text-white border-slate-500' : 'bg-transparent border-slate-500/25 text-slate-500'"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-500" [class.bg-white]="filterStatus() === 'blocked'"></span>
+          Bloqueados
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Active Raffle Technical Info Sheet (Print-Only title appears here) -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+      <div>
+        <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">{{ getSelectedRaffle()?.name }}</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Precio por número: <span class="font-bold text-slate-900 dark:text-white">${{ getSelectedRaffle()?.price }}</span></p>
+      </div>
+
+      <!-- Quick grid legend stats overview -->
+      <div class="flex gap-4 text-xs font-semibold">
+        <div class="flex flex-col">
+          <span class="text-slate-400 text-[10px]">Libres</span>
+          <span class="text-emerald-500 font-bold">{{ getSelectedRaffle()!.numbersCount - (raffleService.participants() | slice:0).length }}</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-slate-400 text-[10px]">Reservados</span>
+          <span class="text-amber-500 font-bold">{{ (raffleService.participants() | slice:0).length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Numbers Grid -->
+    <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-15 gap-2.5 sm:gap-3.5">
+      @for (item of getNumbersList(); track item.num) {
+        <button
+          (click)="onNumberClick(item.num, item.status, item.participant)"
+          [ngClass]="getNumberClass(item.status)"
+          class="aspect-square rounded-2xl font-bold text-sm sm:text-base flex flex-col items-center justify-center relative cursor-pointer transform active:scale-95 transition-all select-none border border-black/5"
+        >
+          <span>{{ item.num }}</span>
+          
+          <!-- Miniature state indicator for accessibility -->
+          <span class="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-white/40"></span>
+        </button>
+      } @empty {
+        <div class="col-span-full py-16 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+          <p class="text-sm font-bold">No se encontraron números</p>
+          <p class="text-xs text-slate-500 mt-1">Ajusta el buscador o los filtros rápidos.</p>
+        </div>
+      }
+    </div>
+  @}
+
+  <!-- MODAL A: Agile Reservation (Only asks Name and Phone) -->
+  @if (isReserveModalOpen() && selectedNumber() !== null) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-scale-in">
+      <div class="w-full max-w-[420px] bg-slate-50 dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 text-slate-800 dark:text-slate-100">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center pb-3 border-b border-slate-200/40 dark:border-slate-800/40">
+          <div>
+            <h2 class="text-base font-bold uppercase tracking-wide text-slate-400">Registrar Ticket</h2>
+            <h3 class="text-lg font-black text-slate-900 dark:text-white mt-1">Número Seleccionado: <span class="text-emerald-500">Nº {{ selectedNumber() }}</span></h3>
+          </div>
+          <button (click)="closeModals()" class="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Form fields (Mobile-friendly big inputs) -->
+        <div class="space-y-4">
+          <!-- Customer Name -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre Completo *</label>
+            <input 
+              type="text" 
+              class="form-input text-sm py-3" 
+              placeholder="Ej. Juan Pérez"
+              [ngModel]="clientName()"
+              (ngModelChange)="clientName.set($event)"
+              required
+              autofocus
+            />
+          </div>
+
+          <!-- Customer Phone -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Teléfono / Celular *</label>
+            <input 
+              type="tel" 
+              class="form-input text-sm py-3" 
+              placeholder="Ej. 3001234567"
+              [ngModel]="clientPhone()"
+              (ngModelChange)="clientPhone.set($event)"
+              required
+            />
+          </div>
+
+          <!-- Ticket State -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Estado de Asignación</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button 
+                type="button"
+                (click)="reserveStatus.set('reserved')"
+                class="py-2.5 rounded-xl border text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                [ngClass]="reserveStatus() === 'reserved' ? 'bg-amber-500 text-white border-amber-500' : 'bg-transparent border-amber-500/30 text-amber-500'"
+              >
+                Reservar
+              </button>
+
+              <button 
+                type="button"
+                (click)="reserveStatus.set('paid')"
+                class="py-2.5 rounded-xl border text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                [ngClass]="reserveStatus() === 'paid' ? 'bg-blue-500 text-white border-blue-500' : 'bg-transparent border-blue-500/30 text-blue-500'"
+              >
+                Marcar Pago
+              </button>
+
+              <button 
+                type="button"
+                (click)="reserveStatus.set('blocked')"
+                class="py-2.5 rounded-xl border text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                [ngClass]="reserveStatus() === 'blocked' ? 'bg-slate-500 text-white border-slate-500' : 'bg-transparent border-slate-500/30 text-slate-500'"
+              >
+                Bloquear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex gap-3 justify-end pt-3 border-t border-slate-200/40 dark:border-slate-800/40">
+          <button 
+            type="button" 
+            (click)="closeModals()"
+            class="px-4 py-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-850 hover:bg-slate-300/60 text-xs font-bold transition-all"
+          >
+            Cancelar
+          </button>
+          
+          <button 
+            type="button" 
+            (click)="onReserveSubmit()"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold shadow-md shadow-emerald-500/10 transition-all"
+          >
+            Confirmar Reserva
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL B: Number Detail & Release options -->
+  @if (isDetailModalOpen() && selectedParticipant() !== null) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-scale-in">
+      <div class="w-full max-w-[420px] bg-slate-50 dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 text-slate-800 dark:text-slate-100 animate-scale-in">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center pb-3 border-b border-slate-200/40 dark:border-slate-800/40">
+          <div>
+            <h2 class="text-base font-bold uppercase tracking-wide text-slate-400">Detalles de Ticket</h2>
+            <h3 class="text-lg font-black text-slate-900 dark:text-white mt-1">Asignado: <span class="text-emerald-500">Nº {{ selectedParticipant()!.reservedNumber }}</span></h3>
+          </div>
+          <button (click)="closeModals()" class="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Detail fields (Visual boxes) -->
+        <div class="space-y-4">
+          <!-- Main details panel -->
+          <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800/40 space-y-3.5">
+            
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400 font-medium">Nombre Cliente</span>
+              <span class="text-xs font-bold">{{ selectedParticipant()!.name }}</span>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400 font-medium">Teléfono / Celular</span>
+              <a [href]="'tel:' + selectedParticipant()!.phone" class="text-xs font-bold text-emerald-500 hover:underline">{{ selectedParticipant()!.phone }}</a>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400 font-medium">Fecha y Hora</span>
+              <span class="text-xs font-semibold">{{ selectedParticipant()!.date }} • {{ selectedParticipant()!.time }}</span>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400 font-medium">Estado Asignación</span>
+              <span 
+                class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide border"
+                [ngClass]="{
+                  'bg-amber-500/10 text-amber-500 border-amber-500/20': selectedParticipant()!.status === 'reserved',
+                  'bg-blue-500/10 text-blue-500 border-blue-500/20': selectedParticipant()!.status === 'paid',
+                  'bg-rose-500/10 text-rose-500 border-rose-500/20': selectedParticipant()!.status === 'expired',
+                  'bg-slate-500/10 text-slate-500 border-slate-500/20': selectedParticipant()!.status === 'blocked'
+                }"
+              >
+                {{ getNumberStatusText(selectedParticipant()!.status) }}
+              </span>
+            </div>
+
+
+          </div>
+        </div>
+
+        <!-- Detail Actions footer -->
+        <div class="flex flex-col gap-2 pt-3 border-t border-slate-200/40 dark:border-slate-800/40">
+          
+          <!-- Confirm Payment if reserved -->
+          @if (selectedParticipant()!.status === 'reserved' || selectedParticipant()!.status === 'expired') {
+            <button 
+              type="button" 
+              (click)="markAsPaid()"
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold shadow-md shadow-emerald-500/10 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Marcar como Pagado (Confirmar Venta)
+            </button>
+          }
+
+
+
+          <!-- Release Number (Delete reservation) -->
+          <button 
+            type="button" 
+            (click)="onRelease()"
+            class="w-full py-3 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white text-xs font-bold border border-rose-500/20 hover:border-transparent transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Liberar Número (Eliminar Ficha)
+          </button>
+
+          <!-- Close Details modal -->
+          <button 
+            type="button" 
+            (click)="closeModals()"
+            class="w-full py-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-850 hover:bg-slate-300/60 text-xs font-semibold text-slate-500 dark:text-slate-400 transition-all mt-1"
+          >
+            Cerrar Detalles
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

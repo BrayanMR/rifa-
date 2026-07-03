@@ -1,0 +1,207 @@
+<div class="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-fade-in text-slate-800 dark:text-slate-200">
+  
+  <!-- Page Header -->
+  <div>
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Registro de Participantes</h1>
+    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Busca, filtra y actualiza la información de los clientes asociados a números de rifas.</p>
+  </div>
+
+  <!-- Search & Filters Panel -->
+  <div class="glass-panel p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+    <!-- Searcher -->
+    <div class="relative w-full md:w-80">
+      <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input 
+        type="text" 
+        class="form-input pl-10" 
+        placeholder="Buscar por cliente, Nº o rifa..."
+        [ngModel]="searchNameQuery()"
+        (ngModelChange)="searchNameQuery.set($event)"
+      />
+    </div>
+
+    <!-- Filters Group -->
+    <div class="flex flex-wrap gap-3.5 w-full md:w-auto justify-end">
+      <!-- Raffle selector -->
+      <div class="flex items-center gap-1.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-xl px-2.5 py-1">
+        <span class="text-[10px] font-medium text-slate-400 uppercase">Rifa</span>
+        <select 
+          class="bg-transparent border-0 text-xs font-semibold focus:ring-0 outline-none pr-6 cursor-pointer"
+          [ngModel]="selectedRaffleId()"
+          (ngModelChange)="selectedRaffleId.set($event)"
+        >
+          <option value="all">Todas</option>
+          @for (r of raffleService.raffles(); track r.id) {
+            <option [value]="r.id">{{ r.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Status selector -->
+      <div class="flex items-center gap-1.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-xl px-2.5 py-1">
+        <span class="text-[10px] font-medium text-slate-400 uppercase">Estado</span>
+        <select 
+          class="bg-transparent border-0 text-xs font-semibold focus:ring-0 outline-none pr-6 cursor-pointer"
+          [ngModel]="filterStatus()"
+          (ngModelChange)="filterStatus.set($event)"
+        >
+          <option value="all">Todos</option>
+          <option value="reserved">Reservados</option>
+          <option value="paid">Pagados</option>
+          <option value="expired">Vencidos</option>
+          <option value="blocked">Bloqueados</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE VIEW: STACKED CARDS (md:hidden) -->
+  <div class="grid grid-cols-1 gap-4 md:hidden">
+    @for (p of filteredParticipants(); track p.id) {
+      <div 
+        class="glass-panel p-4 flex flex-col justify-between gap-4"
+        [style.border-left]="'4px solid ' + getRaffleColor(p.raffleId)"
+      >
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="text-sm font-bold text-slate-950 dark:text-white">{{ p.name }}</h3>
+            <a [href]="'tel:' + p.phone" class="text-xs text-slate-500 dark:text-slate-400 font-medium hover:underline mt-0.5 block">{{ p.phone }}</a>
+            <span class="text-[10px] text-slate-400 font-semibold block mt-1.5 italic">{{ getRaffleName(p.raffleId) }}</span>
+          </div>
+
+          <!-- Status and number -->
+          <div class="flex flex-col items-end gap-1.5">
+            <span 
+              class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border"
+              [ngClass]="getStatusClass(p.status)"
+            >
+              {{ getStatusText(p.status) }}
+            </span>
+            <span 
+              class="px-2.5 py-1 rounded-xl text-xs font-black text-white shrink-0"
+              [style.background-color]="getRaffleColor(p.raffleId)"
+            >
+              Nº {{ p.reservedNumber }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Registration timestamps -->
+        <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold border-t border-b border-slate-200/20 dark:border-slate-800/20 py-2">
+          <span>Registrado</span>
+          <span>{{ p.date }} a las {{ p.time }}</span>
+        </div>
+
+        <!-- Mobile buttons for quick actions -->
+        <div class="flex gap-2">
+          @if (p.status === 'reserved' || p.status === 'expired') {
+            <button 
+              (click)="markAsPaid(p.id)"
+              class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold shadow-md shadow-emerald-500/10 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" />
+              </svg>
+              Confirmar Pago
+            </button>
+          }
+          <button 
+            (click)="onRelease(p)"
+            class="flex-1 py-3.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white text-xs font-bold border border-rose-500/20 hover:border-transparent transition-all flex items-center justify-center gap-1.5 active:scale-95"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862" />
+            </svg>
+            Liberar Número
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="py-16 text-center text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+        No se encontraron participantes registrados.
+      </div>
+    }
+  </div>
+
+  <!-- DESKTOP VIEW: DATA TABLE (hidden md:block) -->
+  <div class="hidden md:block glass-panel overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-100/30 dark:bg-slate-900/30 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <th class="p-4 pl-6">Participante</th>
+            <th class="p-4">Celular</th>
+            <th class="p-4">Rifa Asignada</th>
+            <th class="p-4 text-center">Ticket</th>
+            <th class="p-4">Fecha de Registro</th>
+            <th class="p-4">Estado</th>
+            <th class="p-4 pr-6 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200/20 dark:divide-slate-800/20 text-sm">
+          @for (p of filteredParticipants(); track p.id) {
+            <tr class="hover:bg-slate-100/10 dark:hover:bg-slate-900/10 transition-colors">
+              <td class="p-4 pl-6 font-bold text-slate-950 dark:text-white">{{ p.name }}</td>
+              <td class="p-4">
+                <a [href]="'tel:' + p.phone" class="font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">{{ p.phone }}</a>
+              </td>
+              <td class="p-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ getRaffleName(p.raffleId) }}</td>
+              <td class="p-4 text-center">
+                <span 
+                  class="px-2.5 py-1 rounded-xl text-xs font-black text-white"
+                  [style.background-color]="getRaffleColor(p.raffleId)"
+                >
+                  {{ p.reservedNumber }}
+                </span>
+              </td>
+              <td class="p-4 text-xs text-slate-400">{{ p.date }} • {{ p.time }}</td>
+              <td class="p-4">
+                <span 
+                  class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border"
+                  [ngClass]="getStatusClass(p.status)"
+                >
+                  {{ getStatusText(p.status) }}
+                </span>
+              </td>
+              <td class="p-4 pr-6 text-right flex justify-end gap-2">
+                @if (p.status === 'reserved' || p.status === 'expired') {
+                  <button 
+                    (click)="markAsPaid(p.id)"
+                    class="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white text-xs font-bold transition-all active:scale-95 flex items-center gap-1"
+                    title="Confirmar Pago"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" />
+                    </svg>
+                    Pagar
+                  </button>
+                }
+                <button 
+                  (click)="onRelease(p)"
+                  class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-500 hover:bg-rose-500 hover:text-white text-xs font-bold transition-all active:scale-95 flex items-center gap-1"
+                  title="Liberar Número"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862" />
+                  </svg>
+                  Liberar
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="py-16 text-center text-slate-400 dark:text-slate-500">
+                No se encontraron participantes registrados.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

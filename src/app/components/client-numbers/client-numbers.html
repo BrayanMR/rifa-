@@ -1,0 +1,173 @@
+<div class="min-h-screen bg-slate-50 dark:bg-[#070b12] text-slate-800 dark:text-slate-200 transition-colors duration-500 relative overflow-hidden flex flex-col justify-between py-8 px-4 sm:px-6">
+  
+  <!-- Glowing Background Orbs -->
+  <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-emerald-500/5 blur-[130px] pointer-events-none"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-500/5 blur-[130px] pointer-events-none"></div>
+
+  <!-- Header Brand -->
+  <header class="w-full max-w-lg mx-auto text-center z-10 shrink-0 mb-6">
+    <div class="inline-flex w-12 w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-600 items-center justify-center text-white shadow-lg shadow-emerald-500/10 mb-4 transform hover:rotate-6 transition-transform">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+      </svg>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">🎟️ Reserva tu Número</h1>
+    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2">Elige tu número de la suerte y regístralo al instante.</p>
+  </header>
+
+  <!-- Main Card Body -->
+  <main class="w-full max-w-lg mx-auto z-10 flex-1 flex flex-col justify-center gap-6">
+    
+    <!-- Raffle selection -->
+    <div class="glass-panel p-4 flex flex-col gap-3 shrink-0">
+      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sorteos Disponibles</label>
+      <div class="flex overflow-x-auto no-scrollbar gap-2 pb-1 shrink-0">
+        @for (raffle of raffleService.raffles(); track raffle.id) {
+          @if (raffle.status === 'active') {
+            <button
+              (click)="selectedRaffleId.set(raffle.id)"
+              class="px-4 py-2.5 rounded-xl border text-xs font-semibold whitespace-nowrap active:scale-95 transition-all"
+              [ngClass]="{
+                'bg-emerald-500 text-white border-emerald-500': selectedRaffleId() === raffle.id,
+                'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800': selectedRaffleId() !== raffle.id
+              }"
+            >
+              {{ raffle.name }}
+            </button>
+          }
+        } @empty {
+          <div class="text-xs text-slate-400 py-2 text-center w-full">No hay sorteos activos en este momento.</div>
+        }
+      </div>
+    </div>
+
+    @if (getSelectedRaffle()) {
+      <!-- Info and Grid Card -->
+      <div class="glass-panel p-6 flex flex-col gap-6">
+        
+        <!-- Technical details sheet -->
+        <div class="flex justify-between items-center bg-white/40 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/30 dark:border-slate-800/30 shrink-0">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{{ getSelectedRaffle()?.name }}</h2>
+            <p class="text-xs text-slate-400 mt-1">Precio por ticket: <span class="font-bold text-emerald-500">${{ getSelectedRaffle()?.price }}</span></p>
+          </div>
+          
+          <!-- Colored circle dot identity -->
+          <span class="w-3.5 h-3.5 rounded-full shadow-sm" [style.background-color]="getSelectedRaffle()?.color"></span>
+        </div>
+
+        <!-- Grid layout (numbers 0 to 9) -->
+        <div class="grid grid-cols-5 gap-3 sm:gap-3.5 my-2">
+          @for (item of getNumbersList(); track item.num) {
+            <button
+              (click)="onNumberClick(item.num, item.status)"
+              [ngClass]="getNumberClass(item.status)"
+              class="aspect-square rounded-2xl font-black text-base sm:text-lg flex flex-col items-center justify-center relative cursor-pointer transform active:scale-95 transition-all select-none border border-black/5 p-1"
+            >
+              <span>{{ item.num }}</span>
+              @if (item.participant) {
+                <span class="text-[8px] sm:text-[9px] font-semibold opacity-90 truncate max-w-full px-0.5 block mt-0.5 tracking-tight">
+                  {{ getShortName(item.participant.name) }}
+                </span>
+              } @else {
+                <span class="absolute bottom-1.5 w-1 h-1 rounded-full bg-white/40"></span>
+              }
+            </button>
+          }
+        </div>
+
+        <!-- Legend helper -->
+        <div class="flex justify-center gap-6 text-[10px] font-bold text-slate-400 border-t border-slate-200/20 dark:border-slate-800/20 pt-4 shrink-0 uppercase tracking-wider">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            Disponible
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            Ocupado
+          </div>
+        </div>
+
+      </div>
+    }
+
+  </main>
+
+  <!-- Simple Admin entry footer -->
+  <footer class="w-full text-center z-10 shrink-0 mt-6">
+    <span class="text-xs text-slate-400">¿Eres organizador? </span>
+    <a href="/login" class="text-xs text-emerald-500 font-bold hover:underline">Acceder como Administrador</a>
+  </footer>
+
+  <!-- Booking Modal -->
+  @if (isReserveModalOpen() && selectedNumber() !== null) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-scale-in">
+      <div class="w-full max-w-[400px] bg-slate-50 dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 text-slate-800 dark:text-slate-100">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center pb-3 border-b border-slate-200/40 dark:border-slate-800/40">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wide text-slate-400">Completar Reserva</h2>
+            <h3 class="text-lg font-black text-slate-900 dark:text-white mt-1">Número Seleccionado: <span class="text-emerald-500">Nº {{ selectedNumber() }}</span></h3>
+          </div>
+          <button (click)="isReserveModalOpen.set(false)" class="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Form fields (Agile name/phone only) -->
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre Completo *</label>
+            <input 
+              type="text" 
+              class="form-input text-sm py-3" 
+              placeholder="Ej. Juan Pérez"
+              [ngModel]="clientName()"
+              (ngModelChange)="clientName.set($event)"
+              required
+              autofocus
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Teléfono / Celular *</label>
+            <input 
+              type="tel" 
+              class="form-input text-sm py-3" 
+              placeholder="Ej. 3001234567"
+              [ngModel]="clientPhone()"
+              (ngModelChange)="clientPhone.set($event)"
+              required
+            />
+          </div>
+
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex gap-3 justify-end pt-3 border-t border-slate-200/40 dark:border-slate-800/40">
+          <button 
+            type="button" 
+            (click)="isReserveModalOpen.set(false)"
+            class="px-4 py-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-850 hover:bg-slate-300/60 text-xs font-bold transition-all"
+          >
+            Cancelar
+          </button>
+          
+          <button 
+            type="button" 
+            (click)="onReserveSubmit()"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold shadow-md shadow-emerald-500/10 transition-all"
+          >
+            Confirmar Reserva
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

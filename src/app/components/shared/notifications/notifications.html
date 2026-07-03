@@ -1,0 +1,76 @@
+<div class="fixed bottom-[84px] md:bottom-6 right-4 left-4 md:left-auto md:w-96 flex flex-col gap-3 z-50 pointer-events-none">
+  @for (toast of raffleService.toasts(); track toast.id) {
+    <div 
+      class="pointer-events-auto w-full glass-panel p-4 flex gap-3 shadow-xl relative overflow-hidden animate-scale-in transition-all duration-300 text-slate-800 dark:text-slate-100"
+      [ngClass]="{
+        'border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/90 dark:bg-[#071b15]/95': toast.type === 'success',
+        'border-rose-500/30 dark:border-rose-500/20 bg-rose-50/90 dark:bg-[#200c0f]/95': toast.type === 'error',
+        'border-blue-500/30 dark:border-blue-500/20 bg-blue-50/90 dark:bg-[#0d1628]/95': toast.type === 'info',
+        'border-amber-500/30 dark:border-amber-500/20 bg-amber-50/90 dark:bg-[#20160b]/95': toast.type === 'warning'
+      }"
+    >
+      <!-- Icon -->
+      <div class="shrink-0 mt-0.5">
+        @if (toast.type === 'success') {
+          <svg class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        } @else if (toast.type === 'error') {
+          <svg class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        } @else if (toast.type === 'warning') {
+          <svg class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        } @else {
+          <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      </div>
+
+      <!-- Message -->
+      <div class="flex-1">
+        <p class="text-xs font-semibold leading-normal">
+          @if (toast.type === 'success') { Éxito }
+          @else if (toast.type === 'error') { Error }
+          @else if (toast.type === 'warning') { Advertencia }
+          @else { Información }
+        </p>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">{{ toast.message }}</p>
+      </div>
+
+      <!-- Dismiss Button -->
+      <button 
+        (click)="dismiss(toast.id)"
+        class="shrink-0 h-5 w-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+
+      <!-- Animated Progress Bar -->
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10">
+        <div 
+          class="h-full bg-slate-500/40"
+          [ngClass]="{
+            'bg-emerald-500': toast.type === 'success',
+            'bg-rose-500': toast.type === 'error',
+            'bg-blue-500': toast.type === 'info',
+            'bg-amber-500': toast.type === 'warning'
+          }"
+          [style.animation]="'toast-progress ' + (toast.duration || 4000) + 'ms linear forwards'"
+        ></div>
+      </div>
+    </div>
+  }
+</div>
+
+<style>
+  @keyframes toast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+</style>

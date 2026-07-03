@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/sortiraspa",
+  "installCommand": "npm install",
+  "framework": "angular",
+  "routes": [
+    {
+      "src": "/.*",
+      "destination": "/index.html"
+    }
+  ]
+}
